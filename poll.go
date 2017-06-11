@@ -33,7 +33,8 @@ func main() {
 }
 
 type Result struct {
-	Error   error
+	Error error
+	// TODO: expose more info than just a message stating an update
 	Message string
 }
 
@@ -45,6 +46,7 @@ func SuccessfulResult(message string) Result {
 }
 
 func Poll(d time.Duration, name string) <-chan Result {
+	// TODO: should we also accept quit channel as an arg?
 	changes := make(chan Result, 0)
 	go pollForChanges(d, name, changes)
 	return changes
@@ -59,6 +61,7 @@ func pollForChanges(d time.Duration, name string, changes chan Result) {
 	for {
 		stat, err := os.Stat(name)
 
+		// TODO: make it nicer somehow?
 		if err != nil {
 			changes <- ErrorResult(err)
 		} else {
