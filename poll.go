@@ -56,22 +56,27 @@ func pollForChanges(delay time.Duration, name string, changes chan Change) {
 	var (
 		lastModified time.Time
 		lastSize     int64
+		lastErr      error
 	)
 
 	for {
 		stat, err := os.Stat(name)
 
 		// TODO: make it nicer somehow?
-		if err != nil {
+		if err != nil && lastErr == nil {
+			lastErr = err
 			// TODO: Break if it happens too often?
 			changes <- ErrorChange(err)
-		} else {
+		}
+
+		if err == nil {
 			isNew := stat.ModTime().After(lastModified)
 			sizeChanged := stat.Size() != lastSize
 
 			if isNew || sizeChanged {
 				lastModified = stat.ModTime()
 				lastSize = stat.Size()
+				lastErr = nil
 
 				changes <- SuccessfulChange("Change occured")
 			}
