@@ -32,27 +32,27 @@ func main() {
 
 }
 
-type Result struct {
+type Change struct {
 	Error error
 	// TODO: expose more info than just a message stating an update
 	Message string
 }
 
-func ErrorResult(err error) Result {
-	return Result{Error: err, Message: ""}
+func ErrorChange(err error) Change {
+	return Change{Error: err, Message: ""}
 }
-func SuccessfulResult(message string) Result {
-	return Result{Error: nil, Message: message}
+func SuccessfulChange(message string) Change {
+	return Change{Error: nil, Message: message}
 }
 
-func Poll(d time.Duration, name string) <-chan Result {
+func Poll(delay time.Duration, name string) <-chan Change {
 	// TODO: should we also accept quit channel as an arg?
-	changes := make(chan Result, 0)
-	go pollForChanges(d, name, changes)
+	changes := make(chan Change, 0)
+	go pollForChanges(delay, name, changes)
 	return changes
 }
 
-func pollForChanges(d time.Duration, name string, changes chan Result) {
+func pollForChanges(delay time.Duration, name string, changes chan Change) {
 	var (
 		lastModified time.Time
 		lastSize     int64
@@ -63,7 +63,8 @@ func pollForChanges(d time.Duration, name string, changes chan Result) {
 
 		// TODO: make it nicer somehow?
 		if err != nil {
-			changes <- ErrorResult(err)
+			// TODO: Break if it happens too often?
+			changes <- ErrorChange(err)
 		} else {
 			isNew := stat.ModTime().After(lastModified)
 			sizeChanged := stat.Size() != lastSize
@@ -72,13 +73,12 @@ func pollForChanges(d time.Duration, name string, changes chan Result) {
 				lastModified = stat.ModTime()
 				lastSize = stat.Size()
 
-				changes <- SuccessfulResult("Change occured")
+				changes <- SuccessfulChange("Change occured")
 			}
 		}
 
 		select {
-		case <-time.After(d):
-			fmt.Println("Done waiting")
+		case <-time.After(delay):
 		}
 	}
 }
